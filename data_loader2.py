@@ -45,6 +45,11 @@ class DenoMAEDataGenerator(Dataset):
         if len(npy_data) > target_length:
             npy_data = np.interp(np.linspace(0, len(npy_data) - 1, target_length), 
                                     np.arange(len(npy_data)), npy_data)
+            
+        npy_data = npy_data.reshape((32, 32))
+        npy_data = np.expand_dims(npy_data, axis=0)
+        npy_data = np.repeat(npy_data, 3, axis=0)
+
         return torch.tensor(npy_data, dtype=torch.float32)
 
     def __getitem__(self, index):
@@ -66,26 +71,10 @@ class DenoMAEDataGenerator(Dataset):
         noise_path = os.path.join(self.noise_path, noise_name)
         noise_data = self.preprocess_npy(noise_path, target_length=1024)
 
-        return img, signal_data, noise_data
-    
-image_path = './data/noisyImg/'
-signal_path = './data/signal/'
-noise_path = './data/noise/'
+        # Stack the tensors along a new dimension (modalities dimension)
+        concatenated_tensor = torch.stack([img, signal_data, noise_data], dim=1)
+        # print("concatenated_tensor: ", concatenated_tensor.shape)
 
-batch_size = 16
-image_size = (32, 32)
+        # return img, signal_data, noise_data
 
-# Create dataset and data loader
-dataset = DenoMAEDataGenerator(image_path=image_path, signal_path=signal_path,
-                            noise_path = noise_path, image_size=image_size)
-
-data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-
-# Iterate through the data loader
-for batch_idx, (images, signals, noises) in enumerate(data_loader):
-    # images: Tensor of shape (batch_size, 3, image_size[0], image_size[1])
-    # npy_data: Tensor of shape (batch_size, ...)
-    print(f"Batch {batch_idx+1}")
-    print("Images shape:", images.shape)
-    print("Signals data shape:", signals.shape)
-    print("Noises data shape:", noises.shape)
+        return concatenated_tensor

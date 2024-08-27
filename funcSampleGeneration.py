@@ -5,6 +5,7 @@ from scipy.constants import pi
 from scipy.signal import convolve
 from numpy.random import randn
 import random
+from PIL import Image
 
 def awgn(signal, snr_dB):
     snr = 10**(snr_dB / 10.0)
@@ -40,7 +41,12 @@ def generate_image(signal, consScaleQ,consScaleI,dQX,dIY,dXY,imageSizeX,maxBlkSi
 
         imageArray[:, :, kk] /= np.max(imageArray[:, :, kk])
 
-    plt.imsave(os.path.join(imageDir, f"{imageName}.png"), imageArray[(2 * maxBlkSize):(imageSizeX - 2 * maxBlkSize), (2 * maxBlkSize):(imageSizeY - 2 * maxBlkSize), :])
+    # Convert to RGB (ensure no alpha channel)
+    imageArray = (imageArray * 255).astype(np.uint8)
+    im = Image.fromarray(imageArray[(2 * maxBlkSize):(imageSizeX - 2 * maxBlkSize), (2 * maxBlkSize):(imageSizeY - 2 * maxBlkSize), :])
+    im.save(os.path.join(imageDir, f"{imageName}.png"))
+
+    # plt.imsave(os.path.join(imageDir, f"{imageName}.png"), imageArray[(2 * maxBlkSize):(imageSizeX - 2 * maxBlkSize), (2 * maxBlkSize):(imageSizeY - 2 * maxBlkSize), :])
 
     print(f"{txtPath}{imageName}.png \n")
     with open(f"./{setPath}/{genType}.txt", 'a') as file:

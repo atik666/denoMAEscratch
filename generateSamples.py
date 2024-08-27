@@ -10,8 +10,9 @@ image_num = [2]
 cons_scale = [2.5, 2.5]    # scale of constellation image 
 mod_type = ['OOK', '4ASK', '8ASK', 'OQPSK', 'CPFSK', 'GFSK', '4PAM', 'DQPSK', '16PAM', 'GMSK']
 set_type = ['noiseLessImg', 'noisyImg', 'signal', 'noise']
+mode = 'train'    # 'train' or 'test'
 
-fold_path = './data/'     # where to store images
+fold_path = f'./data/{mode}'     # where to store images
 
 # Main script
 if __name__ == "__main__":
