@@ -23,7 +23,7 @@ class PatchShuffle(torch.nn.Module):
         self.ratio = ratio
 
     def forward(self, patches : torch.Tensor):
-        T, B, C = patches.shape
+        T, B, C = patches.shape # T: Number of patches, B: batch, C: channel
         remain_T = int(T * (1 - self.ratio))
 
         indexes = [random_indexes(T) for _ in range(B)]
@@ -32,6 +32,8 @@ class PatchShuffle(torch.nn.Module):
 
         patches = take_indexes(patches, forward_indexes)
         patches = patches[:remain_T]
+
+        # print("Pathches: ", patches.shape)
 
         return patches, forward_indexes, backward_indexes
 
@@ -65,6 +67,8 @@ class MAE_Encoder(torch.nn.Module):
     def forward(self, img):
         patches = self.patchify(img)
         patches = rearrange(patches, 'b c h w -> (h w) b c')
+        print("pos_embedding: ", self.pos_embedding.shape)
+        print("patches: ", patches.shape)
         patches = patches + self.pos_embedding
 
         patches, forward_indexes, backward_indexes = self.shuffle(patches)
@@ -162,7 +166,6 @@ class ViT_Classifier(torch.nn.Module):
         features = rearrange(features, 'b t c -> t b c')
         logits = self.head(features[0])
         return logits
-
 
 if __name__ == '__main__':
     shuffle = PatchShuffle(0.75)

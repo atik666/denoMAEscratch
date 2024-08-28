@@ -72,9 +72,9 @@ class DenoMAEDataGenerator(Dataset):
         noise_data = self.preprocess_npy(noise_path, target_length=1024)
 
         # Stack the tensors along a new dimension (modalities dimension)
-        concatenated_tensor = torch.stack([img, signal_data, noise_data], dim=1)
+        concatenated_tensor = torch.stack([img, signal_data, noise_data], dim=1) # (3, 32, 32) -> (3, 3, 32, 32)
         # print("concatenated_tensor: ", concatenated_tensor.shape)
 
         # return img, signal_data, noise_data
 
-        return concatenated_tensor
+        return concatenated_tensor # batch, number of modalities, channel, height, width
