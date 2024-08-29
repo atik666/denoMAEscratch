@@ -33,8 +33,6 @@ class PatchShuffle(torch.nn.Module):
         patches = take_indexes(patches, forward_indexes)
         patches = patches[:remain_T]
 
-        # print("Pathches: ", patches.shape)
-
         return patches, forward_indexes, backward_indexes
 
 class MAE_Encoder(torch.nn.Module):
@@ -64,19 +62,53 @@ class MAE_Encoder(torch.nn.Module):
         trunc_normal_(self.cls_token, std=.02)
         trunc_normal_(self.pos_embedding, std=.02)
 
-    def forward(self, img):
-        patches = self.patchify(img)
+    def patch_emdedding(self, img):
+        patches = self.patchify(img) # TODO: multi-modal data should run in a for loop here
         patches = rearrange(patches, 'b c h w -> (h w) b c')
-        print("pos_embedding: ", self.pos_embedding.shape)
-        print("patches: ", patches.shape)
-        patches = patches + self.pos_embedding
+        patches = patches + self.pos_embedding # TODO: on second thought, might need to modify here 
+        patches, _, backward_indexes = self.shuffle(patches)
+        return patches, backward_indexes
 
-        patches, forward_indexes, backward_indexes = self.shuffle(patches)
+    # def forward(self, img): 
+    def forward(self, input_modality): 
 
-        patches = torch.cat([self.cls_token.expand(-1, patches.shape[1], -1), patches], dim=0)
+        patches_list = []
+        backindx_list = []
+        # Iterate over each modality
+        for modality_idx in range(input_modality.shape[1]):
+            # Extract the modality
+            modality_data = input_modality[:, modality_idx, :, :, :]
+            # Append to the list of reshaped modalities
+            patches, backward_indexes = self.patch_emdedding(modality_data)
+            patches_list.append(patches)
+            backindx_list.append(backward_indexes)
+
+        concat_patches = torch.cat(patches_list, dim=0)
+        concat_backindx = torch.cat(backindx_list, dim=0)
+
+        print("concat_patches: ", concat_patches.shape)
+        print("concat_backindx: ", concat_backindx.shape)
+
+        # # TODO: this is where you need to input the multi-modal data
+        # patches = self.patchify(img) # TODO: multi-modal data should run in a for loop here
+        # patches = rearrange(patches, 'b c h w -> (h w) b c')
+        # print("pos_embedding: ", self.pos_embedding.shape)
+        # print("patches: ", patches.shape)
+        # patches = patches + self.pos_embedding # TODO: on second thought, might need to modify here 
+
+        # patches, forward_indexes, backward_indexes = self.shuffle(patches)
+
+        # patches = torch.cat([self.cls_token.expand(-1, patches.shape[1], -1), patches], dim=0)
+        # patches = rearrange(patches, 't b c -> b t c')
+        # features = self.layer_norm(self.transformer(patches))
+        # features = rearrange(features, 'b t c -> t b c')
+
+        patches = torch.cat([self.cls_token.expand(-1, concat_patches.shape[1], -1), concat_patches], dim=0)
         patches = rearrange(patches, 't b c -> b t c')
         features = self.layer_norm(self.transformer(patches))
         features = rearrange(features, 'b t c -> t b c')
+
+        print("features: ", features.shape)
 
         return features, backward_indexes
 
@@ -143,7 +175,7 @@ class MAE_ViT(torch.nn.Module):
 
     def forward(self, img):
         features, backward_indexes = self.encoder(img)
-        predicted_img, mask = self.decoder(features,  backward_indexes)
+        predicted_img, mask = self.decoder(features,  backward_indexes)  # TODO: I am here now. Figure out the input to the decoders. Add all the decoders.
         return predicted_img, mask
 
 class ViT_Classifier(torch.nn.Module):

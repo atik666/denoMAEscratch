@@ -1,5 +1,6 @@
 from data_loader2 import DenoMAEDataGenerator
 from torch.utils.data import DataLoader
+import numpy as np
 
 config = {'train_image_path' : './data/train/noisyImg/',
             'train_signal_path' : './data/train/signal/',
@@ -44,3 +45,4 @@ for batch_idx, data in enumerate(test_dataloader):
     # npy_data: Tensor of shape (batch_size, ...)
     print(f"Batch {batch_idx+1}")
     print("Concatenated data shape:", data.shape)
+

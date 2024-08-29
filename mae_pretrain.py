@@ -31,6 +31,7 @@ if __name__ == '__main__':
     steps_per_update = batch_size // load_batch_size
 
     config = {'train_image_path' : './data/train/noisyImg/',
+              'train_noiseless_image_path' : './data/train/noiseLessImg/',
             'train_signal_path' : './data/train/signal/',
             'train_noise_path' : './data/train/noise/',
             'test_image_path' : './data/test/noisyImg/',
@@ -41,11 +42,11 @@ if __name__ == '__main__':
             }
 
     # Create dataset and data loader
-    train_dataset = DenoMAEDataGenerator(image_path=config['train_image_path'], signal_path=config['train_signal_path'],
+    train_dataset = DenoMAEDataGenerator(image_path=config['train_image_path'], noiseLessImg_path=config['train_noiseless_image_path'], signal_path=config['train_signal_path'],
                                 noise_path = config['train_noise_path'], image_size=config['image_size'])
     train_dataloader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True)
 
-    test_dataset = DenoMAEDataGenerator(image_path=config['test_image_path'], signal_path=config['test_signal_path'],
+    test_dataset = DenoMAEDataGenerator(image_path=config['test_image_path'],noiseLessImg_path=config['train_noiseless_image_path'], signal_path=config['test_signal_path'],
                                 noise_path = config['test_noise_path'], image_size=config['image_size'])
     test_dataloader = DataLoader(test_dataset, batch_size=config['batch_size'], shuffle=True)
 
@@ -64,11 +65,12 @@ if __name__ == '__main__':
     for e in range(args.total_epoch):
         model.train()
         losses = []
-        for img, _, _ in tqdm(iter(train_dataloader)):
+        # for img, _, _ in tqdm(iter(train_dataloader)):
+        for modalities, noiseless_img in tqdm(iter(train_dataloader)):
             step_count += 1
-            img = img.to(device) # TODO: img should be noisy image
-            predicted_img, mask = model(img)
-            loss = torch.mean((predicted_img - img) ** 2 * mask) / args.mask_ratio # TODO: img should be noiseless image
+            modalities = modalities.to(device) # TODO: img should be noisy image
+            predicted_img, mask = model(modalities)
+            loss = torch.mean((predicted_img - noiseless_img.to(device)) ** 2 * mask) / args.mask_ratio # TODO: img should be noiseless image
             loss.backward()
             if step_count % steps_per_update == 0:
                 optim.step()

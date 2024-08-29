@@ -6,24 +6,27 @@ from torchvision import transforms
 import torch
 
 class DenoMAEDataGenerator(Dataset):
-    def __init__(self, image_path, signal_path, noise_path, image_size=(224, 224), transform=None):
+    def __init__(self, image_path, noiseLessImg_path, signal_path, noise_path, image_size=(224, 224), transform=None):
         """
         Initializes the data generator for DenoMAE.
         
         Args:
             image_path (str): Directory containing image files (e.g., PNG).
+            noiseLess_image_path (str): Directory containing noiseless image files (e.g., PNG).
             signal_path (str): Directory containing signal files.
             noise_path (str): Directory containing noise files.
             image_size (tuple): Size to which images will be resized.
             transform (callable, optional): Optional transform to be applied on an image.
         """
         self.image_path = image_path
+        self.noiseLessImg_path = noiseLessImg_path
         self.signal_path = signal_path
         self.noise_path = noise_path
         self.image_size = image_size
         self.transform = transform
 
         self.image_filenames = sorted(os.listdir(image_path))
+        self.noiseLessImg_filenames = sorted(os.listdir(noiseLessImg_path))
         self.signal_filenames = sorted(os.listdir(signal_path))
         self.noise_filenames = sorted(os.listdir(noise_path))
 
@@ -62,6 +65,14 @@ class DenoMAEDataGenerator(Dataset):
         else:
             img = transforms.ToTensor()(img)
 
+        noiseless_img_name = self.noiseLessImg_filenames[index]
+        noiseless_img_path = os.path.join(self.noiseLessImg_path, noiseless_img_name)
+        noiseless_img = Image.open(noiseless_img_path).resize(self.image_size)
+        if self.transform:
+            noiseless_img = self.transform(noiseless_img)
+        else:
+            noiseless_img = transforms.ToTensor()(noiseless_img)
+
         # Load and preprocess npy file
         signal_name = self.signal_filenames[index]
         signal_path = os.path.join(self.signal_path, signal_name)
@@ -77,4 +88,5 @@ class DenoMAEDataGenerator(Dataset):
 
         # return img, signal_data, noise_data
 
-        return concatenated_tensor # batch, number of modalities, channel, height, width
+        # return concatenated_tensor # batch, number of modalities, channel, height, width
+        return concatenated_tensor, noiseless_img
